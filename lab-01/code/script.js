@@ -17,7 +17,10 @@
  */
 
 // Getting configuration from the command line options
-// verbose: 
+// verbose: printing on console
+// stepVisualization: print the tree in each step of the algorithm
+// lastVisualization: print the last tree after the algorithm is finished
+// runs: number of runs of the expirement
 const config = {
     verbose: process.argv.slice(2)[0]?.charAt(1) === 'v' || false,
     stepVisualization: process.argv.slice(2)[0] === '-vs' || false,
