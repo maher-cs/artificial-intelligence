@@ -1,3 +1,23 @@
+/*
+ * UQU - Computer Science -  Artificial Inteligence - Lab 1
+ * Student: MHD Maher Azkoul
+ *
+ * This script contains a tree implmentation
+ * the tree implementation conatains search algorithms:
+ * - Depth-first search
+ * - Breadh-first search
+ * 
+ * The script runs an expirement on search algorithms and compute the time complexity
+ * 
+ * The script recieves configuration for the:
+ * - interactivity and verbosity (outputs on the console)
+ * - number of runs of the experiment
+ * 
+ * The script writes the results of the expirement of "expirements.csv"
+ */
+
+// Getting configuration from the command line options
+// verbose: 
 const config = {
     verbose: process.argv.slice(2)[0]?.charAt(1) === 'v' || false,
     stepVisualization: process.argv.slice(2)[0] === '-vs' || false,
@@ -5,36 +25,50 @@ const config = {
     runs: +process.argv.slice(2)[1] || 20
 }
 
+// wrapper on printing on console function
 const log = (...str) => {
     if(config.verbose) {
         console.log(...str);
     }
 }
 
+// importing file-system module for dealing with files
 const fs = require('fs');
 
 function main() {
     fs.writeFileSync("expirements.csv", `i,n,bfs_time,dfs_time\n`);
+
+    // run the expirement n times, where n provided as command line arguemnt
     new Array(config.runs).fill(0).forEach((_, i) => {
         log(`run ${i + 1}: `);
+
+        // creating root node
         const tree = createTree({data: {id: genRandom(0, 50)}}, {...config});
 
+        // genereate random tree
         const randoms = [tree.data().id, ...fillRandom(tree)];
+
         log(`random data (${randoms.length}): `, randoms);
         log(DIVIDOR);
     
+        // choose a random goal node
         const goal = {
             id: randoms[genRandom(0, randoms.length)]
         };
     
+        // finding goal using breadth-first search and calculating the time complexity
         const bfsTime = time(() => tree.bfs(goal));
+
         log("bfs time: ", bfsTime, "ns");
         log(DIVIDOR);
     
+        // clean up data and state of the tree to start a new search
         tree.clearGoals();
         tree.clearVisited();
     
+        // finding goal using depth-first search and calculating the time complexity
         const dfsTime = time(() => tree.dfs(goal));
+
         log("dfs time: ", dfsTime, "ns");
         log(DIVIDOR);
 
@@ -43,10 +77,12 @@ function main() {
 
         log(SECTION_DIVIDOR);
 
+        // writing data on csv file
         fs.appendFileSync("expirements.csv", `${i + 1},${randoms.length},${bfsTime},${dfsTime}\n`);
     });
 }
 
+// function to get current time in nanoseconds
 const getNanoSecTime = () => {
     const hrTime = process.hrtime();
     return hrTime[0] * 1000000000 + hrTime[1];
@@ -74,11 +110,12 @@ const fillRandom = (tree, set = genSequenceRandom(0, 122), maxBreadth = 3, maxDe
     return randoms;
 }
 
-// generate a random integer between start and end
+// generate a random integer between START and END args
 const genRandom = (start = 0, end = 6) => {
     return ~~(Math.random() * end + start);
 }
 
+// generate a range (or sequence of numbers) that is sorted randomly
 const genSequenceRandom = (start = 0, end = 1000) => {
     return new Array(end - start).fill(0).map((_, i) => i).sort(() => Math.random() - 0.5);
 }
@@ -86,6 +123,7 @@ const genSequenceRandom = (start = 0, end = 1000) => {
 // create tree object
 const createTree = ({data, children = []}, {stepVisualization = false, lastVisualization = false} = {}) => {
 
+    // if visualization of each step is enabled, print each step
     const stepVisualize = () => {
         if(stepVisualization) {
             printPretty();
@@ -93,12 +131,14 @@ const createTree = ({data, children = []}, {stepVisualization = false, lastVisua
         }
     }
 
+    // if visualization of the last tree is enabled, print the tree
     const lastVisualize = () => {
         if(lastVisualization) {
             printPretty();
         }
     }
 
+    // add a child to the node
     const addChild = ({childData, childChildren = []}) => {
         const child = createTree({data: childData, children: childChildren});
         children = [
@@ -108,6 +148,7 @@ const createTree = ({data, children = []}, {stepVisualization = false, lastVisua
         return child;
     }
 
+    // clean up goal state of the node and its children
     const clearGoals = () => {
         if(data.goal) {
             data.goal = undefined;
@@ -122,6 +163,7 @@ const createTree = ({data, children = []}, {stepVisualization = false, lastVisua
         }
     }
 
+    // clean up visited state of the node and its children
     const clearVisited = () => {
         if(data.visited) {
             data.visited = undefined;
@@ -136,6 +178,7 @@ const createTree = ({data, children = []}, {stepVisualization = false, lastVisua
         }
     }
 
+    // depth-first search
     const dfs = (goal) => {
         if(data.id === goal.id) {
             data.goal = true;
@@ -168,6 +211,7 @@ const createTree = ({data, children = []}, {stepVisualization = false, lastVisua
         }
     }
 
+    // breadth-first search
     const bfs = (goal) => {
         if(data.id === goal.id) {
             data.goal = true;
@@ -200,6 +244,7 @@ const createTree = ({data, children = []}, {stepVisualization = false, lastVisua
         }
     }
 
+    // print the tree on the console
     const printPretty = (indent = "", last = true) => {
         const greenBg = txt => {
             const ANSI_GREEN_BACKGROUND = "\u001B[42m";
@@ -231,6 +276,7 @@ const createTree = ({data, children = []}, {stepVisualization = false, lastVisua
         children.forEach((c, i) => c.printPretty(indent, i == children.length - 1));
     }
 
+    // public fields and methods
     return {
         data: () => data,
         children: () => children,
