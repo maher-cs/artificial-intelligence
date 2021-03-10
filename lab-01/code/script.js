@@ -7,7 +7,7 @@
  * - Depth-first search
  * - Breadh-first search
  *
- * The script runs an expirement on search algorithms and compute the time complexity
+ * The script runs an expirement on search algorithms and compute the time and space complexity
  *
  * The script recieves configuration for the:
  * - interactivity and verbosity (outputs on the console)
@@ -39,7 +39,7 @@ const log = (...str) => {
 const fs = require("fs");
 
 function main() {
-  fs.writeFileSync("expirements.csv", `i,n,bfs_time,dfs_time\n`);
+  fs.writeFileSync("expirements.csv", `i,n,bfs_time,bfs_space,dfs_time,dfs_space\n`);
 
   // run the expirement n times, where n provided as command line arguemnt
   new Array(config.runs).fill(0).forEach((_, i) => {
@@ -61,8 +61,10 @@ function main() {
 
     // finding goal using breadth-first search and calculating the time complexity
     const bfsTime = time(() => tree.bfs(goal));
+    const bfsSpace = tree.maxSpace();
 
     log("bfs time: ", bfsTime, "ns");
+    log("bfs space: ", bfsSpace, " times");
     log(DIVIDOR);
 
     // clean up data and state of the tree to start a new search
@@ -71,8 +73,10 @@ function main() {
 
     // finding goal using depth-first search and calculating the time complexity
     const dfsTime = time(() => tree.dfs(goal));
+    const dfsSpace = tree.maxSpace();
 
     log("dfs time: ", dfsTime, "ns");
+    log("dfs space: ", dfsSpace, " times");
     log(DIVIDOR);
 
     log("random goal: ", goal);
@@ -81,7 +85,7 @@ function main() {
     log(SECTION_DIVIDOR);
 
     // writing data on csv file
-    fs.appendFileSync("expirements.csv", `${i + 1},${randoms.length},${bfsTime},${dfsTime}\n`);
+    fs.appendFileSync("expirements.csv", `${i + 1},${randoms.length},${bfsTime},${bfsSpace},${dfsTime},${dfsSpace}\n`);
   });
 }
 
@@ -128,6 +132,9 @@ const genSequenceRandom = (start = 0, end = 1000) => {
 
 // create tree object
 const createTree = ({ data, children = [] }, { stepVisualization = false, lastVisualization = false } = {}) => {
+  // track max space of fringes (space complexity)
+  let maxSpace = 0;
+
   // if visualization of each step is enabled, print each step
   const stepVisualize = () => {
     if (stepVisualization) {
@@ -182,6 +189,7 @@ const createTree = ({ data, children = [] }, { stepVisualization = false, lastVi
 
   // depth-first search
   const dfs = (goal) => {
+    maxSpace = 0;
     if (data.id === goal.id) {
       data.goal = true;
       return;
@@ -197,6 +205,7 @@ const createTree = ({ data, children = [] }, { stepVisualization = false, lastVi
       clearVisited,
       dfs,
       bfs,
+      maxSpace: () => maxSpace,
       printPretty,
     });
 
@@ -209,12 +218,16 @@ const createTree = ({ data, children = [] }, { stepVisualization = false, lastVi
         return;
       }
       stack = [...stack, ...s.children()];
+      if (stack.length > maxSpace) {
+        maxSpace = stack.length;
+      }
       stepVisualize();
     }
   };
 
   // breadth-first search
   const bfs = (goal) => {
+    maxSpace = 0;
     if (data.id === goal.id) {
       data.goal = true;
       return;
@@ -230,6 +243,7 @@ const createTree = ({ data, children = [] }, { stepVisualization = false, lastVi
       clearVisited,
       dfs,
       bfs,
+      maxSpace: () => maxSpace,
       printPretty,
     });
 
@@ -242,6 +256,9 @@ const createTree = ({ data, children = [] }, { stepVisualization = false, lastVi
         return;
       }
       queue = [...s.children(), ...queue];
+      if (queue.length > maxSpace) {
+        maxSpace = queue.length;
+      }
       stepVisualize();
     }
   };
@@ -287,6 +304,7 @@ const createTree = ({ data, children = [] }, { stepVisualization = false, lastVi
     clearVisited,
     dfs,
     bfs,
+    maxSpace: () => maxSpace,
     printPretty,
   };
 };
