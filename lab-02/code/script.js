@@ -40,14 +40,14 @@ const log = (...str) => {
 const fs = require("fs");
 
 function main() {
-  fs.writeFileSync("expirements.csv", `i,bfs_time,bfs_space\n`);
+  fs.writeFileSync("expirements.csv", `i,bfs_time,bfs_space,bfs_generated_nodes,dfs_time,dfs_space,dfs_generated_nodes\n`);
 
   // run the expirement n times, where n provided as command line arguemnt
   new Array(config.runs).fill(0).forEach((_, i) => {
     log(`run ${i + 1}: `);
 
     // creating random initial state
-    const initialState = [2, 4, 3, 1, 0, 6, 7, 5, 8];
+    const initialState = [1, 2, 3, 0, 5, 6, 4, 7, 8];
     log("initial state: ", initialState);
 
     const goal = [1, 2, 3, 4, 5, 6, 7, 8, 0];
@@ -56,20 +56,43 @@ function main() {
     log(DIVIDOR);
 
     // creating root node
-    const tree = createTree({ data: { state: initialState } }, { ...config });
+    let tree = createTree({ data: { state: initialState } }, { ...config });
 
     let finalNode;
 
-    // finding goal using breadth-first search and calculating the time complexity
+    // finding goal using breadth-first search and calculating the time and space complexity
     const bfsTime = time(() => {
       finalNode = tree.bfs(goal);
     });
     const bfsSpace = tree.maxSpace();
+    const bfsGenerated = tree.countAllNodes();
 
     const bfsPath = getPath(finalNode);
 
     log("bfs time: ", bfsTime, "ns");
     log("bfs space: ", bfsSpace);
+    log("generated nodes: ", bfsGenerated);
+    log(DIVIDOR);
+
+    // clean up data and state of the tree to start a new search
+    tree.clearGoals();
+    tree.clearVisited();
+
+    // create new tree
+    tree = createTree({ data: { state: initialState } }, { ...config });
+
+    // finding goal using depth-first search and calculating the time and space complexity
+    const dfsTime = time(() => {
+      finalNode = tree.dfs(goal);
+    });
+    const dfsSpace = tree.maxSpace();
+    const dfsGenerated = tree.countAllNodes();
+
+    const dfsPath = getPath(finalNode);
+
+    log("dfs time: ", dfsTime, "ns");
+    log("dfs space: ", dfsSpace);
+    log("generated nodes: ", dfsGenerated);
     log(DIVIDOR);
 
     // clean up data and state of the tree to start a new search
@@ -77,12 +100,12 @@ function main() {
     tree.clearVisited();
 
     // writing data on csv file
-    fs.appendFileSync("expirements.csv", `${i + 1},${bfsTime},${bfsSpace}\n`);
+    fs.appendFileSync("expirements.csv", `${i + 1},${bfsTime},${bfsSpace},${bfsGenerated},${dfsTime},${dfsSpace},${dfsGenerated}\n`);
 
     // writing path to path.txt file
     fs.writeFileSync(
       "path.txt",
-      `RUN ${i}:\n` +
+      `RUN ${i}:\n\n` +
         `Breadth-first search path:\n` +
         `${bfsPath.map((node) => {
           const s = node.data().state;
@@ -91,7 +114,16 @@ function main() {
 [${s[3]} ${s[4]} ${s[5]}]
 [${s[6]} ${s[7]} ${s[8]}]
 `;
-        })}`
+        })}\n----------\n` +
+        `Depth-first search path:\n` +
+        `${dfsPath.map((node) => {
+          const s = node.data().state;
+          return `
+[${s[0]} ${s[1]} ${s[2]}]
+[${s[3]} ${s[4]} ${s[5]}]
+[${s[6]} ${s[7]} ${s[8]}]
+`;
+        })}\n==========`
     );
   });
 }
@@ -255,6 +287,18 @@ const createTree = (
     }
   };
 
+  const countAllNodes = () => {
+    if (children.length <= 0) {
+      return 1;
+    } else {
+      let count = 0;
+      for (const c of children) {
+        count += c.countAllNodes();
+      }
+      return count + 1;
+    }
+  }
+
   let current = {
     data: () => data,
     children: children,
@@ -263,6 +307,7 @@ const createTree = (
     addChild,
     clearGoals,
     clearVisited,
+    countAllNodes,
   };
 
   // depth-first search
@@ -370,6 +415,7 @@ const createTree = (
     addChild,
     clearGoals,
     clearVisited,
+    countAllNodes,
     dfs,
     bfs,
     printPretty,

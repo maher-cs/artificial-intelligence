@@ -13,7 +13,7 @@
 # usage: SCRIPT_NAME [PROGRAMMING_LANGUAGE]
 # where PROGRAMMING_LANGUAGE = javascript
 
-DEFAULT_OPTIONS="-vl 1"
+DEFAULT_OPTIONS="-vl 20"
 
 if [[ ${1} = '--help' ]]
 	then
