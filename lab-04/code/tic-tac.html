@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <style>
+      *,
+      *::after,
+      *::before {
+        box-sizing: border-box;
+        font-family: 'Courier New', Courier, monospace;
+      }
+
+      :root {
+        --cell-size: 100px;
+        --mark-size: calc(var(--cell-size) * 0.9);
+      }
+
+      body {
+        margin: 0;
+      }
+
+      .board {
+        width: 100vw;
+        height: 100vh;
+        display: grid;
+        justify-content: center;
+        align-content: center;
+        justify-items: center;
+        align-items: center;
+        grid-template-columns: repeat(3, auto);
+      }
+
+      .cell {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        border: 1px solid black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        cursor: pointer;
+      }
+
+      .cell:first-child,
+      .cell:nth-child(2),
+      .cell:nth-child(3) {
+        border-top: none;
+      }
+
+      .cell:nth-child(3n + 1) {
+        border-left: none;
+      }
+
+      .cell:nth-child(3n + 3) {
+        border-right: none;
+      }
+
+      .cell:last-child,
+      .cell:nth-child(8),
+      .cell:nth-child(7) {
+        border-bottom: none;
+      }
+
+      .cell.x,
+      .cell.o {
+        cursor: not-allowed;
+      }
+
+      .cell.x::before,
+      .cell.x::after,
+      .cell.o::before {
+        background-color: black;
+      }
+
+      .board.x .cell:not(.x):not(.o):hover::before,
+      .board.x .cell:not(.x):not(.o):hover::after,
+      .board.o .cell:not(.x):not(.o):hover::before {
+        background-color: lightgrey;
+      }
+
+      .cell.x::before,
+      .cell.x::after,
+      .board.x .cell:not(.x):not(.o):hover::before,
+      .board.x .cell:not(.x):not(.o):hover::after {
+        content: "";
+        position: absolute;
+        width: calc(var(--mark-size) * 0.15);
+        height: var(--mark-size);
+        background-color: rgb(128, 84, 146);
+      }
+
+      .cell.x::before,
+      .board.x .cell:not(.x):not(.o):hover::before {
+        transform: rotate(45deg);
+      }
+
+      .cell.x::after,
+      .board.x .cell:not(.x):not(.o):hover::after {
+        transform: rotate(-45deg);
+      }
+
+      .cell.o::before,
+      .cell.o::after,
+      .board.o .cell:not(.x):not(.o):hover::before,
+      .board.o .cell:not(.x):not(.o):hover::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        background-color: rgb(63, 117, 110);
+      }
+
+      .cell.o::before,
+      .board.o .cell:not(.x):not(.o):hover::before {
+        width: var(--mark-size);
+        height: var(--mark-size);
+      }
+
+      .cell.o::after,
+      .board.o .cell:not(.x):not(.o):hover::after {
+        width: calc(var(--mark-size) * 0.7);
+        height: calc(var(--mark-size) * 0.7);
+        background-color: white;
+      }
+
+      .winning-message {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 5rem;
+        flex-direction: column;
+        backdrop-filter: blur(8px);
+      }
+
+      .winning-message button {
+        font-size: 2rem;
+        background-color: white;
+        border: 1px solid black;
+        padding: 0.25em 0.5em;
+        cursor: pointer;
+      }
+
+      .winning-message button:hover {
+        background-color: black;
+        color: white;
+        border-color: white;
+      }
+
+      .winning-message.show {
+        display: flex;
+      }
+
+      .credits {
+        position: fixed;
+        bottom: 0;
+      }
+    </style>
+    <title>Tic Tac Toy | AI</title>
+  </head>
+  <body>
+    <div class="board" id="board">
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+      <div class="cell" data-cell></div>
+    </div>
+    <div class="winning-message" id="winningMessage">
+      <div data-winning-message-text></div>
+      <button id="restartButton">Restart</button>
+    </div>
+    <div class="credits">
+      Interface Credits: WebDevSimplified,
+      <a href="https://github.com/WebDevSimplified/JavaScript-Tic-Tac-Toe" target="_blank">Github</a>
+    </div>
+    <script src="ai.js"></script>
+    <script>
+      const X = "x"
+      const O = "o"
+      const X_CLASS = "x"
+      const O_CLASS = "o"
+
+      const WINNING_COMBINATIONS = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+      ]
+      const cellElements = document.querySelectorAll("[data-cell]")
+      const board = document.getElementById("board")
+      const winningMessageElement = document.getElementById("winningMessage")
+      const restartButton = document.getElementById("restartButton")
+      const winningMessageTextElement = document.querySelector("[data-winning-message-text]")
+      let currentPlayer
+
+      startGame()
+
+      restartButton.addEventListener("click", startGame)
+
+      function startGame() {
+        currentPlayer = false
+        cellElements.forEach((cell) => {
+          cell.classList.remove(X_CLASS)
+          cell.classList.remove(O_CLASS)
+          cell.removeEventListener("click", handleClick)
+          cell.addEventListener("click", handleClick, { once: true })
+        })
+        setBoardHoverClass()
+        winningMessageElement.classList.remove("show")
+      }
+
+      function handleClick(e) {
+        const cell = e.target
+        const currentClass = currentPlayer ? O_CLASS : X_CLASS
+        placeMark(cell, currentClass)
+        if (checkWin(currentClass)) {
+          endGame(false)
+        } else if (isDraw()) {
+          endGame(true)
+        } else {
+          swapTurns()
+
+          // call AI player to make its move
+          if (currentPlayer) playAi()
+
+          setBoardHoverClass()
+        }
+      }
+
+      function endGame(draw) {
+        if (draw) {
+          winningMessageTextElement.innerText = "Draw!"
+        } else {
+          winningMessageTextElement.innerText = `${currentPlayer ? "O's" : "X's"} Wins!`
+        }
+        winningMessageElement.classList.add("show")
+      }
+
+      function isDraw() {
+        return [...cellElements].every((cell) => {
+          return cell.classList.contains(X_CLASS) || cell.classList.contains(O_CLASS)
+        })
+      }
+
+      function placeMark(cell, currentClass) {
+        cell.classList.add(currentClass)
+      }
+
+      function swapTurns() {
+        currentPlayer = !currentPlayer
+      }
+
+      function setBoardHoverClass() {
+        board.classList.remove(X_CLASS)
+        board.classList.remove(O_CLASS)
+        if (currentPlayer) {
+          board.classList.add(O_CLASS)
+        } else {
+          board.classList.add(X_CLASS)
+        }
+      }
+
+      function checkWin(currentClass) {
+        return WINNING_COMBINATIONS.some((combination) => {
+          return combination.every((index) => {
+            return cellElements[index].classList.contains(currentClass)
+          })
+        })
+      }
+
+      // link AI algorith to the GUI
+      function playAi() {
+
+        // map gui board to the representation used in the AI algorithm
+        const currentFlattenBoard = []
+        cellElements.forEach((cell) => {
+          if (cell.classList.contains(X_CLASS)) {
+            currentFlattenBoard.push(AI_CONSTANTS.X)
+          } else if (cell.classList.contains(O_CLASS)) {
+            currentFlattenBoard.push(AI_CONSTANTS.O)
+          } else {
+            currentFlattenBoard.push(AI_CONSTANTS.EMPTY)
+          }
+        })
+        const board = flat2MatrixBoard(currentFlattenBoard)
+
+        // determine best move using intelligence algorithm
+        const move = bestMove(board)
+
+        // convert move to index
+        let index = move.i * 3 + move.j
+
+        // dispatch click event on chosen cell
+        cellElements[index].dispatchEvent(new Event("click"))
+      }
+    </script>
+  </body>
+</html>
